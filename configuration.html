@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+</head>
+
+<body>
+    <!-- Reference: http://getbootstrap.com/javascript/#tabs -->
+    <form>
+    <div class="form-group">
+    <label for="inputUser">Username</label>
+    <input type="email" class="form-control" id="inputUser" name="inputUser" placeholder="Username" value="<?=data['USER']?>">
+    <p class="help-block">Your Zendesk user email address.</p>
+    </div>
+    <div class="form-group">
+    <label for="inputToken">API Token</label>
+    <input type="text" class="form-control" id="inputToken" name="inputToken" placeholder="API Token" value="<?=data['TOKEN']?>">
+    <p class="help-block">Your api Token, see how to get one <a href="https://developer.zendesk.com/rest_api/docs/core/introduction#security-and-authentication">here</a></p>
+    </div>
+    <div class="form-group">
+    <label for="inputSubdomain">Zendesk Subdomain</label>
+    <input type="text" class="form-control" id="inputSubdomain" name="inputSubdomain" placeholder="Zendesk Subdomain" value="<?=data['SUBDOMAIN']?>">
+    <p class="help-block">Do not type .zendesk.com nor http:// or https:// </p>
+    </div>
+    <div class="form-group">
+    <label for="inputID">Last ID checked</label>
+    <input type="text" class="form-control" id="inputID" name="inputID" placeholder="Zendesk Subdomain" value="<?=data['LAST_CHECKED']?>">
+    <p class="help-block">The app will ignore this call ID and all the previous ones.</p>
+    </div>
+    <button type="submit" class="btn btn-default" onclick="google.script.run.withSuccessHandler(google.script.host.close()).saveConfig(this.parentNode)" >Save</button>
+    </form>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>
