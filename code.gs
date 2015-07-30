@@ -50,9 +50,9 @@ function generateTickets() {
     var date = new Date(values[1][2]);
     var pfrom = values[i][3].replace("(", "").replace(")", "").replace("-", "").replace(/\s+/g, '');
     var date = new Date(values[i][2]);
-   
+    Logger.log("Checking id: " +values[i][0]+". Last checked was " + last_checked);
     if (from_list.indexOf(pfrom) <= -1 && parseInt(values[i][0])>last_checked ){
-      Logger.log("Creating ticket");
+      Logger.log("Creating ticket for id: " + values[i][0]);
       from_list.push(pfrom);
       var pto = values[i][4].replace(/\s+/g, '');;
       var data = {
@@ -79,18 +79,81 @@ function generateTickets() {
       data.ticket.requester_id = requester;
     }
     createTicket(JSON.stringify(data));
+    scriptProperties.setProperty('LAST_CHECKED', values[i][0]);
   }else{
-    Logger.log("Not creating ticket");
+    Logger.log("Not creating ticket for ID: " + values[i][0]);
   }
-  scriptProperties.setProperty('LAST_CHECKED', values[i][0]);
+  
 } 
 
 }
 
 function doAllTheFun() {
-  sortFormResponses();
-  parseSheet();
-  generateTickets();
+  if(verifyConfig()){
+    sortFormResponses();
+    parseSheet();
+    generateTickets();
+  }
+}
+function verifyConfig(){
+  // Check if config has 0 values
+  initialize();
+  var res = true;
+  var error = "";
+  if(user == ''){
+    error += "<p>ERROR: Please add the username on the configuration page.</p>";
+    res = false;
+  }else if(subdomain == ''){
+    error += "<p>ERROR: Please add the subdomain on the configuration page.</p>";
+    res = false;
+  }else if(token == ''){
+    error += "<p>ERROR: Please add the token on the configuration page.</p>";
+    res = false;
+  }else if(!doTestAPICall()){
+    error += "<p>ERROR :The API details are incorrect, please review them before continuing.</p>";
+    res = false;
+  }
+  
+  if(!res){
+   doShowErrors(error);
+  }
+  
+  return res;
+}
+
+function doShowErrors(error){
+  
+  var html = HtmlService.createHtmlOutput()
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME)
+      .setTitle('My custom sidebar')
+      .setWidth(300);
+  html.clear();
+  html.append(error);
+  SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
+      .showSidebar(html);
+}
+
+function doTestAPICall() {
+  var headers = {
+    'Authorization': 'Basic ' + Utilities.base64Encode(user + "/token:" + token)
+  };
+  var url = "https://" + subdomain + ".zendesk.com/api/v2/users/me.json";
+  var options = {
+    'contentType': 'application/json',
+    'method': 'get',
+    'headers': headers
+  };
+  var response = UrlFetchApp.fetch(url, options);
+  var json = response.getContentText();
+  var data = JSON.parse(json);
+  Logger.log(data);
+  if (data.user.email != user) {
+    //User was not authenticated
+    return false;
+  } else {
+    //User was correctly authenticated
+    return true;
+  }
 }
 
 function getRequester(phonenumber) {
@@ -134,7 +197,7 @@ function createTicket(data) {
 function onOpen() {
   var scriptProperties = PropertiesService.getScriptProperties();
   SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
-  .createMenu('Zendesk Ticket Generator')
+  .createMenu('Zendesk Ticket Creator')
   .addItem('Configuration', 'openConfig')
   .addItem('Run!', 'doAllTheFun')
   .addToUi();
@@ -157,6 +220,9 @@ function openConfig() {
   SpreadsheetApp.getUi().showModalDialog(doBuildConfigHtml().setWidth(400).setHeight(450), 'Zendesk Ticket Generator Config');
 }
 
+function onInstall(){
+  onOpen();
+}
 
 function isEmpty(obj) {
   return Object.keys(obj).length === 0;
@@ -186,11 +252,8 @@ function sortFormResponses() {
   initialize();
   var lastCol = page.getLastColumn();
   var lastRow = page.getLastRow();
-  Logger.log("Last row: " + lastRow);
-  Logger.log("Last row: " + lastCol);
   // assumes headers in row 1
   var r = page.getRange(2, 1, lastRow - 1, lastCol);
-
   // Note the use of an array
   r.sort([{ column: 1, ascending: true }]);
 
